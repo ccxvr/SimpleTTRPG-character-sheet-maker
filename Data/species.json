@@ -4,7 +4,7 @@
       "id": "human",
       "name": "Human",
       "base": { "move": 6 },
-      "mods": {}
+      "desc": "Baseline species."
     }
   ]
 }
