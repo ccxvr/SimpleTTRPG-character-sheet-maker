@@ -1,8 +1,0 @@
-{
-  "vectors": [
-    { "id": "dart", "name": "Dart (Cost 1 SL)", "notes": "Behaves as a ranged attack; after construction roll Ranged to hit." },
-    { "id": "area", "name": "Area (Cost Level×2 SL)", "notes": "Sphere/Cone/Line/Ring based on level (rules doc)." },
-    { "id": "dart_plus_area", "name": "Dart + Area", "notes": "On miss, area still resolves; primary target can take both dart+area (separate Dodges)." },
-    { "id": "totem", "name": "Totem (Cost Level×3 SL)", "notes": "Stationary focus lasts rounds equal to level; reapplies vectors/effects." }
-  ]
-}
