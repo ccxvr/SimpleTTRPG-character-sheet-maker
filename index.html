@@ -40,7 +40,6 @@
     .title { font-weight:700; }
     .sub { font-size:12px; color:#b8c2d6; margin-top:2px; }
     .right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
-    .badge { font-size:12px; padding:3px 8px; border:1px solid #30384a; border-radius:999px; color:#b8c2d6; }
 
     .sheet {
       background:#fff; color:#111; border-radius:10px; border:1px solid #d7dbe4;
@@ -58,337 +57,382 @@
   </style>
 </head>
 <body>
-  <header>
-    <h1>Simple TTRPG – Character Builder</h1>
-  </header>
+<header>
+  <h1>Simple TTRPG – Character Builder</h1>
+</header>
 
-  <main>
-    <!-- LEFT -->
-    <section class="panel left">
-      <div class="hd">
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <span class="pill">Budget: <strong id="xpBudgetLbl">0</strong></span>
-          <span class="pill">Spent: <strong id="xpSpentLbl">0</strong></span>
-          <span class="pill">Remaining: <strong id="xpRemainingLbl">0</strong></span>
+<main>
+  <!-- LEFT -->
+  <section class="panel left">
+    <div class="hd">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="pill">Budget: <strong id="xpBudgetLbl">0</strong></span>
+        <span class="pill">Spent: <strong id="xpSpentLbl">0</strong></span>
+        <span class="pill">Remaining: <strong id="xpRemainingLbl">0</strong></span>
+      </div>
+      <button class="small ghost" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="bd">
+      <div class="row">
+        <div>
+          <label>Name</label>
+          <input id="name" placeholder="e.g., Marcus Valen" />
         </div>
-        <button class="small ghost" id="resetBtn">Reset</button>
+        <div>
+          <label>Species</label>
+          <select id="species"></select>
+        </div>
       </div>
 
-      <div class="bd">
-        <div class="row">
-          <div>
-            <label>Name</label>
-            <input id="name" placeholder="e.g., Marcus Valen" />
-          </div>
-          <div>
-            <label>Species</label>
-            <select id="species"></select>
-          </div>
+      <div class="row">
+        <div>
+          <label>Concept</label>
+          <input id="concept" placeholder="e.g., Mercenary, Mage..." />
         </div>
-
-        <div class="row">
-          <div>
-            <label>Concept</label>
-            <input id="concept" placeholder="e.g., Mercenary, Mage..." />
-          </div>
-          <div>
-            <label>Starting XP Budget</label>
-            <input id="xpBudget" type="number" min="0" step="1" />
-          </div>
-        </div>
-
-        <div style="height:10px"></div>
-
-        <div class="panel" style="border-radius:10px;">
-          <div class="hd"><strong>Characteristics</strong><span class="muted">All start at 1</span></div>
-          <div class="bd">
-            <div class="row3">
-              <div><label>Might</label><input id="mgt" type="number" min="1" step="1"></div>
-              <div><label>Agility</label><input id="agi" type="number" min="1" step="1"></div>
-              <div><label>Wits</label><input id="wit" type="number" min="1" step="1"></div>
-            </div>
-            <div class="row3" style="margin-top:10px;">
-              <div><label>Toughness</label><input id="tgh" type="number" min="1" step="1"></div>
-              <div><label>Mental</label><input id="mtl" type="number" min="1" step="1"></div>
-              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
-                <button class="primary" id="applyCharBtn">Apply Changes (XP)</button>
-              </div>
-            </div>
-            <div class="muted" id="charCostHint" style="margin-top:10px;">—</div>
-          </div>
-        </div>
-
-        <div style="height:12px"></div>
-
-        <div class="panel" style="border-radius:10px;">
-          <div class="hd"><strong>Skills</strong><span class="muted">Basics start at 20</span></div>
-          <div class="bd">
-            <div class="row3">
-              <div>
-                <label>Buy New Specialized Skill</label>
-                <input id="newSkillName" placeholder="e.g., Medicine" />
-              </div>
-              <div>
-                <label>Cost</label>
-                <input value="20 XP" disabled />
-              </div>
-              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
-                <button id="buySkillBtn">Buy Skill</button>
-              </div>
-            </div>
-
-            <div style="height:10px"></div>
-
-            <div class="row">
-              <div>
-                <label>Select Skill</label>
-                <select id="skillSelect"></select>
-              </div>
-              <div>
-                <label>Increase by</label>
-                <input id="skillIncBy" type="number" min="1" step="1" value="1" />
-              </div>
-            </div>
-
-            <div style="display:flex; gap:10px; margin-top:10px;">
-              <button class="primary" id="incSkillBtn">Increase (XP)</button>
-              <button class="ghost" id="decSkillBtn">Decrease -1 (Refund)</button>
-            </div>
-
-            <div class="muted" id="skillCostHint" style="margin-top:10px;">—</div>
-
-            <div style="height:10px"></div>
-            <div class="list" id="skillsList"></div>
-          </div>
-        </div>
-
-        <div style="height:12px"></div>
-
-        <div class="panel" style="border-radius:10px;">
-          <div class="hd"><strong>Traits</strong><span class="muted">XP</span></div>
-          <div class="bd">
-            <div class="row">
-              <div>
-                <label>Trait</label>
-                <select id="traitSelect"></select>
-              </div>
-              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
-                <button class="primary" id="addTraitBtn">Add Trait</button>
-              </div>
-            </div>
-            <div style="height:10px"></div>
-            <div class="list" id="traitsList"></div>
-            <div class="muted" id="emptyTraits">No traits.</div>
-          </div>
-        </div>
-
-        <div style="height:12px"></div>
-
-        <div class="panel" style="border-radius:10px;">
-          <div class="hd"><strong>Equipment</strong><span class="muted">No XP, has Might req</span></div>
-          <div class="bd">
-            <div class="row">
-              <div>
-                <label>Weapon</label>
-                <select id="weaponSelect"></select>
-              </div>
-              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
-                <button id="addWeaponBtn">Add Weapon</button>
-              </div>
-            </div>
-
-            <div class="row" style="margin-top:10px;">
-              <div>
-                <label>Armor</label>
-                <select id="armorSelect"></select>
-              </div>
-              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
-                <button id="addArmorBtn">Add Armor</button>
-              </div>
-            </div>
-
-            <div style="height:10px"></div>
-            <div class="list" id="equipList"></div>
-            <div class="muted" id="emptyEquip">No equipment.</div>
-          </div>
-        </div>
-
-        <div style="height:12px"></div>
-
-        <!-- SPELL BUILDER (updated) -->
-        <div class="panel" style="border-radius:10px;">
-          <div class="hd"><strong>Spell Builder</strong><span class="muted">Vectors chain + effects</span></div>
-          <div class="bd">
-            <div class="row">
-              <div>
-                <label>Spell Name</label>
-                <input id="spellName" placeholder="e.g., Fireball" />
-              </div>
-              <div>
-                <label>Add Vector</label>
-                <select id="vectorAddSelect"></select>
-              </div>
-            </div>
-
-            <div class="row3" style="margin-top:10px;">
-              <div>
-                <label>Area Form</label>
-                <select id="areaFormSelect" disabled></select>
-              </div>
-              <div>
-                <label>Area Level</label>
-                <input id="areaLevelInput" type="number" min="0" step="1" value="0" disabled />
-              </div>
-              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
-                <button class="primary" id="addVectorBtn">Add Vector Step</button>
-              </div>
-            </div>
-
-            <div style="margin-top:10px;">
-              <label>Vector Chain</label>
-              <div class="list" id="vectorChainList"></div>
-              <div class="muted" id="vectorChainHint">Add one or more vectors (e.g., Dart + Totem + Cone).</div>
-            </div>
-
-            <div style="margin-top:10px;">
-              <label>Effects (multi-select)</label>
-              <select id="spellEffects" multiple size="6"></select>
-              <div class="muted" style="margin-top:6px;">Hold Ctrl/Cmd to select multiple.</div>
-            </div>
-
-            <div class="row3" style="margin-top:10px;">
-              <div><label>Damage Level</label><input id="spellDamageLevel" type="number" min="0" step="1" value="0"></div>
-              <div><label>Totem Level</label><input id="spellTotemLevel" type="number" min="0" step="1" value="0"></div>
-              <div><label>Short Note</label><input id="spellShortNote" placeholder="optional"/></div>
-            </div>
-
-            <div style="margin-top:10px;">
-              <label>Rules Text</label>
-              <textarea id="spellText" placeholder="Optional extra text..."></textarea>
-            </div>
-
-            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
-              <button class="primary small" id="addSpellBtn">Add Spell</button>
-              <button class="ghost small" id="clearSpellBtn">Clear</button>
-            </div>
-
-            <div style="height:10px"></div>
-            <div class="list" id="spellsList"></div>
-            <div class="muted" id="emptySpells">No spells.</div>
-          </div>
-        </div>
-
-        <div style="height:12px"></div>
-
-        <div class="panel" style="border-radius:10px;">
-          <div class="hd"><strong>Notes</strong><span class="muted">Auto-saved</span></div>
-          <div class="bd">
-            <textarea id="notes" placeholder="Backstory, gear notes, spell loadout, etc."></textarea>
-          </div>
-        </div>
-
-        <div style="height:12px"></div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="ghost small" id="exportBtn">Export JSON</button>
-          <button class="ghost small" id="importBtn">Import JSON</button>
-          <button class="ghost small" id="printBtn">Print / Save PDF</button>
-        </div>
-
-        <div style="margin-top:10px;">
-          <label>Export / Import</label>
-          <textarea id="jsonBox" placeholder="Export shows here. Paste JSON here to import."></textarea>
+        <div>
+          <label>Starting XP Budget</label>
+          <input id="xpBudget" type="number" min="0" step="1" />
         </div>
       </div>
-    </section>
 
-    <!-- RIGHT -->
-    <section class="panel">
-      <div class="hd">
-        <strong>Printable Sheet</strong>
-        <span class="muted">Use Print → Save as PDF</span>
-      </div>
-      <div class="bd">
-        <div class="sheet" id="sheet">
-          <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-            <div>
-              <div style="font-size:22px; font-weight:800;" id="sheetName">Unnamed</div>
-              <div style="color:#444; margin-top:2px;" id="sheetMeta">—</div>
+      <div style="height:10px"></div>
+
+      <div class="panel" style="border-radius:10px;">
+        <div class="hd"><strong>Characteristics</strong><span class="muted">All start at 1</span></div>
+        <div class="bd">
+          <div class="row3">
+            <div><label>Might</label><input id="mgt" type="number" min="1" step="1"></div>
+            <div><label>Agility</label><input id="agi" type="number" min="1" step="1"></div>
+            <div><label>Wits</label><input id="wit" type="number" min="1" step="1"></div>
+          </div>
+          <div class="row3" style="margin-top:10px;">
+            <div><label>Toughness</label><input id="tgh" type="number" min="1" step="1"></div>
+            <div><label>Mental</label><input id="mtl" type="number" min="1" step="1"></div>
+            <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+              <button class="primary" id="applyCharBtn">Apply Changes (XP)</button>
             </div>
-            <div style="text-align:right;">
-              <div><strong>HP</strong>: <span id="sheetHP">0</span></div>
-              <div><strong>AP</strong>: <span id="sheetAP">0</span> &nbsp; <strong>RAP</strong>: <span id="sheetRAP">0</span></div>
-              <div><strong>Move</strong>: <span id="sheetMove">0</span></div>
+          </div>
+          <div class="muted" id="charCostHint" style="margin-top:10px;">—</div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="panel" style="border-radius:10px;">
+        <div class="hd"><strong>Skills</strong><span class="muted">Basics start at 20</span></div>
+        <div class="bd">
+          <div class="row3">
+            <div>
+              <label>Buy New Specialized Skill</label>
+              <input id="newSkillName" placeholder="e.g., Medicine" />
+            </div>
+            <div>
+              <label>Cost</label>
+              <input value="20 XP" disabled />
+            </div>
+            <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+              <button id="buySkillBtn">Buy Skill</button>
             </div>
           </div>
 
-          <hr />
+          <div style="height:10px"></div>
 
-          <div style="display:grid; grid-template-columns: 260px 1fr; gap:12px;">
-            <!-- LEFT SIDEBAR -->
+          <div class="row">
             <div>
-              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
-                <div style="font-weight:800; margin-bottom:6px;">Characteristics</div>
-                <div id="sheetChars">—</div>
-              </div>
-
-              <div style="height:10px"></div>
-
-              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
-                <div style="font-weight:800; margin-bottom:6px;">Skills</div>
-                <div id="sheetSkills">—</div>
-              </div>
-
-              <div style="height:10px"></div>
-
-              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
-                <div style="font-weight:800; margin-bottom:6px;">Traits</div>
-                <div id="sheetTraits">—</div>
-              </div>
+              <label>Select Skill</label>
+              <select id="skillSelect"></select>
             </div>
-
-            <!-- MAIN COLUMN -->
             <div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
-                  <div style="font-weight:800; margin-bottom:6px;">Actions</div>
-                  <div style="color:#555; margin-bottom:6px;">AP total: <span id="sheetAPTotal">0</span></div>
-                  <div id="sheetActions">—</div>
+              <label>Increase by</label>
+              <input id="skillIncBy" type="number" min="1" step="1" value="1" />
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="primary" id="incSkillBtn">Increase (XP)</button>
+            <button class="ghost" id="decSkillBtn">Decrease -1 (Refund)</button>
+          </div>
+
+          <div class="muted" id="skillCostHint" style="margin-top:10px;">—</div>
+
+          <div style="height:10px"></div>
+          <div class="list" id="skillsList"></div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="panel" style="border-radius:10px;">
+        <div class="hd"><strong>Traits</strong><span class="muted">XP</span></div>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label>Trait</label>
+              <select id="traitSelect"></select>
+            </div>
+            <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+              <button class="primary" id="addTraitBtn">Add Trait</button>
+            </div>
+          </div>
+          <div style="height:10px"></div>
+          <div class="list" id="traitsList"></div>
+          <div class="muted" id="emptyTraits">No traits.</div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="panel" style="border-radius:10px;">
+        <div class="hd"><strong>Equipment</strong><span class="muted">No XP, has Might req</span></div>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label>Weapon</label>
+              <select id="weaponSelect"></select>
+            </div>
+            <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+              <button id="addWeaponBtn">Add Weapon</button>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label>Armor</label>
+              <select id="armorSelect"></select>
+            </div>
+            <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+              <button id="addArmorBtn">Add Armor</button>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+          <div class="list" id="equipList"></div>
+          <div class="muted" id="emptyEquip">No equipment.</div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <!-- SPELL BUILDER (combo groups) -->
+      <div class="panel" style="border-radius:10px;">
+        <div class="hd"><strong>Spell Builder</strong><span class="muted">Vector group → Effects → Next group…</span></div>
+        <div class="bd">
+
+          <div class="row">
+            <div>
+              <label>Spell Name</label>
+              <input id="spellName" placeholder="e.g., Fireball of Terror" />
+            </div>
+            <div>
+              <label>Total SL</label>
+              <input id="spellTotalSL" disabled />
+            </div>
+          </div>
+
+          <div style="height:8px"></div>
+
+          <div class="panel" style="border-radius:10px;">
+            <div class="hd"><strong>Current Vector Group</strong><span class="muted">Build vectors first</span></div>
+            <div class="bd">
+              <div class="row">
+                <div>
+                  <label>Add Vector</label>
+                  <select id="vectorAddSelect"></select>
                 </div>
-
-                <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
-                  <div style="font-weight:800; margin-bottom:6px;">Reactions</div>
-                  <div style="color:#555; margin-bottom:6px;">RAP total: <span id="sheetRAPTotal">0</span></div>
-                  <div id="sheetReactions">—</div>
+                <div>
+                  <label>Area Form</label>
+                  <select id="areaFormSelect" disabled></select>
                 </div>
               </div>
 
-              <div style="height:12px"></div>
-
-              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
-                <div style="font-weight:800; margin-bottom:6px;">Equipment</div>
-                <div id="sheetEquip">—</div>
+              <div class="row3" style="margin-top:10px;">
+                <div>
+                  <label>Area Level</label>
+                  <input id="areaLevelInput" type="number" min="0" step="1" value="0" disabled />
+                </div>
+                <div>
+                  <label>Totem Level (if used)</label>
+                  <input id="spellTotemLevel" type="number" min="0" step="1" value="0" />
+                </div>
+                <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                  <button class="primary" id="addVectorBtn">Add Vector Step</button>
+                </div>
               </div>
 
-              <div style="height:12px"></div>
-
-              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
-                <div style="font-weight:800; margin-bottom:6px;">Spells</div>
-                <div id="sheetSpells">—</div>
+              <div style="margin-top:10px;">
+                <label>Vector Chain (this group)</label>
+                <div class="list" id="vectorChainList"></div>
+                <div class="muted" id="vectorChainHint">Example: Dart + Totem + Cone L2</div>
               </div>
             </div>
           </div>
 
-          <hr />
-          <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
-            <div style="font-weight:800; margin-bottom:6px;">Notes</div>
-            <div id="sheetNotes">—</div>
+          <div style="height:10px"></div>
+
+          <div class="panel" style="border-radius:10px;">
+            <div class="hd"><strong>Effects for this Group</strong><span class="muted">Must add at least one</span></div>
+            <div class="bd">
+              <div>
+                <label>Effects (multi-select)</label>
+                <select id="spellEffects" multiple size="6"></select>
+                <div class="muted" style="margin-top:6px;">Hold Ctrl/Cmd to select multiple.</div>
+              </div>
+
+              <div class="row3" style="margin-top:10px;">
+                <div>
+                  <label>Damage Level (only if Damage is selected)</label>
+                  <input id="spellDamageLevel" type="number" min="0" step="1" value="0">
+                </div>
+                <div>
+                  <label>Short Note (optional)</label>
+                  <input id="spellShortNote" placeholder="optional"/>
+                </div>
+                <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                  <button class="primary" id="addEffectGroupBtn">Add Effect Group</button>
+                </div>
+              </div>
+
+              <div class="muted" id="effectGroupHint" style="margin-top:8px;">
+                Adding an Effect Group locks the current vectors + effects, and starts a new group.
+              </div>
+            </div>
           </div>
+
+          <div style="height:10px"></div>
+
+          <div>
+            <label>Spell Groups (combo chain)</label>
+            <div class="list" id="spellGroupsList"></div>
+            <div class="muted" id="spellGroupsHint">No groups yet. Build vectors, select effects, then “Add Effect Group”.</div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label>Rules Text</label>
+            <textarea id="spellText" placeholder="Optional extra text..."></textarea>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+            <button class="primary small" id="addSpellBtn">Add Spell</button>
+            <button class="ghost small" id="clearSpellBtn">Clear Spell Draft</button>
+          </div>
+
+          <div style="height:10px"></div>
+          <div class="list" id="spellsList"></div>
+          <div class="muted" id="emptySpells">No spells.</div>
         </div>
       </div>
-    </section>
-  </main>
 
-  <script type="module" src="./app.js"></script>
+      <div style="height:12px"></div>
+
+      <div class="panel" style="border-radius:10px;">
+        <div class="hd"><strong>Notes</strong><span class="muted">Auto-saved</span></div>
+        <div class="bd">
+          <textarea id="notes" placeholder="Backstory, gear notes, spell loadout, etc."></textarea>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="ghost small" id="exportBtn">Export JSON</button>
+        <button class="ghost small" id="importBtn">Import JSON</button>
+        <button class="ghost small" id="printBtn">Print / Save PDF</button>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label>Export / Import</label>
+        <textarea id="jsonBox" placeholder="Export shows here. Paste JSON here to import."></textarea>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="panel">
+    <div class="hd">
+      <strong>Printable Sheet</strong>
+      <span class="muted">Use Print → Save as PDF</span>
+    </div>
+    <div class="bd">
+      <div class="sheet" id="sheet">
+        <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+          <div>
+            <div style="font-size:22px; font-weight:800;" id="sheetName">Unnamed</div>
+            <div style="color:#444; margin-top:2px;" id="sheetMeta">—</div>
+          </div>
+          <div style="text-align:right;">
+            <div><strong>HP</strong>: <span id="sheetHP">0</span></div>
+            <div><strong>AP</strong>: <span id="sheetAP">0</span> &nbsp; <strong>RAP</strong>: <span id="sheetRAP">0</span></div>
+            <div><strong>Move</strong>: <span id="sheetMove">0</span></div>
+          </div>
+        </div>
+
+        <hr />
+
+        <div style="display:grid; grid-template-columns: 260px 1fr; gap:12px;">
+          <div>
+            <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+              <div style="font-weight:800; margin-bottom:6px;">Characteristics</div>
+              <div id="sheetChars">—</div>
+            </div>
+
+            <div style="height:10px"></div>
+
+            <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+              <div style="font-weight:800; margin-bottom:6px;">Skills</div>
+              <div id="sheetSkills">—</div>
+            </div>
+
+            <div style="height:10px"></div>
+
+            <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+              <div style="font-weight:800; margin-bottom:6px;">Traits</div>
+              <div id="sheetTraits">—</div>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                <div style="font-weight:800; margin-bottom:6px;">Actions</div>
+                <div style="color:#555; margin-bottom:6px;">AP total: <span id="sheetAPTotal">0</span></div>
+                <div id="sheetActions">—</div>
+              </div>
+
+              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                <div style="font-weight:800; margin-bottom:6px;">Reactions</div>
+                <div style="color:#555; margin-bottom:6px;">RAP total: <span id="sheetRAPTotal">0</span></div>
+                <div id="sheetReactions">—</div>
+              </div>
+            </div>
+
+            <div style="height:12px"></div>
+
+            <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+              <div style="font-weight:800; margin-bottom:6px;">Equipment</div>
+              <div id="sheetEquip">—</div>
+            </div>
+
+            <div style="height:12px"></div>
+
+            <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+              <div style="font-weight:800; margin-bottom:6px;">Spells</div>
+              <div id="sheetSpells">—</div>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+        <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+          <div style="font-weight:800; margin-bottom:6px;">Notes</div>
+          <div id="sheetNotes">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="./app.js"></script>
 </body>
 </html>
