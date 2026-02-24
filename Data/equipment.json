@@ -1,20 +1,30 @@
 {
+  "armorMightReq": {
+    "very_light": 1,
+    "light": 2,
+    "medium": 4,
+    "heavy": 6,
+    "super_heavy": 8
+  },
+  "heavyWeaponMightReq": 4,
+
   "equipment": {
+    "armor": [
+      { "id": "padded", "name": "Very Light Armor", "category": "very_light", "dr": 1, "desc": "DR 1" },
+      { "id": "leather", "name": "Light Armor", "category": "light", "dr": 2, "desc": "DR 2" },
+      { "id": "chain", "name": "Medium Armor", "category": "medium", "dr": 3, "desc": "DR 3" },
+      { "id": "plate", "name": "Heavy Armor", "category": "heavy", "dr": 4, "desc": "DR 4" },
+      { "id": "super_plate", "name": "Super Heavy Armor", "category": "super_heavy", "dr": 5, "desc": "DR 5" }
+    ],
+
     "weapons": [
-      {
-        "id": "longsword",
-        "name": "Longsword",
-        "kind": "melee",
-        "damage": "1d6",
-        "apCost": 2
-      },
-      {
-        "id": "bow",
-        "name": "Bow",
-        "kind": "ranged",
-        "damage": "1d6",
-        "apCost": 2
-      }
+      { "id": "light_melee", "name": "Light Melee Weapon", "kind": "melee", "weight": "light", "apCost": 1, "damage": "1d3 + floor(Might/3)", "skill": "Melee" },
+      { "id": "normal_melee", "name": "Normal Melee Weapon", "kind": "melee", "weight": "normal", "apCost": 2, "damage": "1d6 + floor(Might/2)", "skill": "Melee" },
+      { "id": "heavy_melee", "name": "Heavy Melee Weapon", "kind": "melee", "weight": "heavy", "apCost": 3, "damage": "1d8 + Might", "skill": "Melee" },
+
+      { "id": "light_ranged", "name": "Light Ranged Weapon", "kind": "ranged", "weight": "light", "apCost": 1, "damage": "1d3", "skill": "Ranged" },
+      { "id": "normal_ranged", "name": "Normal Ranged Weapon", "kind": "ranged", "weight": "normal", "apCost": 2, "damage": "1d6", "skill": "Ranged" },
+      { "id": "heavy_ranged", "name": "Heavy Ranged Weapon", "kind": "ranged", "weight": "heavy", "apCost": 3, "damage": "1d8", "skill": "Ranged" }
     ]
   }
 }
