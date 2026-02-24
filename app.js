@@ -1,31 +1,12 @@
-/* Simple TTRPG Builder (combo spells update)
+/* Simple TTRPG Builder (combo spells)
    - Spell draft supports multiple groups: [vectors] + [effects] repeated
    - No effects without vectors; groups must end with effects
    - Still blocks Area + Totem (Totem must be before any Area in a chain)
-   - Damage dice by level table from rules doc :contentReference[oaicite:2]{index=2}
+   - Damage dice by level (L1=1d3, L2=1d6, etc.)
 */
 
 const STORAGE_KEY = "simple_ttrpg_char_v4";
 const BASE_URL = new URL(".", import.meta.url);
-
-function showFatal(msg){
-  console.error(msg);
-  // Put a visible red error on the page
-  const div = document.createElement("div");
-  div.style.cssText = "position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;background:#3b0b0b;color:#fff;border:1px solid #ff5555;padding:10px;border-radius:10px;font-family:system-ui;white-space:pre-wrap;";
-  div.textContent = "APP ERROR:\n" + msg;
-  document.body.appendChild(div);
-}
-
-async function loadJSON(relPath){
-  const url = new URL(relPath, BASE_URL);
-  const res = await fetch(url, { cache: "no-store" });
-  if(!res.ok){
-    throw new Error(`Fetch failed ${res.status} for ${url.href}`);
-  }
-  return await res.json();
-}
-
 
 let DB = {
   species: null,
@@ -37,6 +18,17 @@ let DB = {
   rules: null,
 };
 
+function showFatal(msg){
+  console.error(msg);
+  const div = document.createElement("div");
+  div.style.cssText =
+    "position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;" +
+    "background:#3b0b0b;color:#fff;border:1px solid #ff5555;" +
+    "padding:10px;border-radius:10px;font-family:system-ui;white-space:pre-wrap;";
+  div.textContent = "APP ERROR:\n" + msg;
+  document.body.appendChild(div);
+}
+
 function el(id){
   const node = document.getElementById(id);
   if(!node) throw new Error(`Missing element id="${id}" in index.html`);
@@ -47,7 +39,12 @@ function clampInt(n, fallback=0){
   const x = Number.parseInt(n, 10);
   return Number.isFinite(x) ? x : fallback;
 }
-function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+
+function uid(){
+  return Math.random().toString(16).slice(2) + Date.now().toString(16);
+}
+
+/* ---------- Persistence ---------- */
 
 function defaultState(){
   return {
@@ -64,10 +61,7 @@ function defaultState(){
     traits: [],
     equipment: [],
     spells: [],
-    // Spell draft:
-    // currentVectors = building vectors for the NEXT group
-    // groups = finished groups (vectors+effects)
-    spellDraft: { currentVectors: [], groups: [] }
+    spellDraft: { currentVectors: [], groups: [] } // combo groups draft
   };
 }
 
@@ -78,23 +72,37 @@ function loadState(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return defaultState();
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return defaultState();
-    if (!parsed.spellDraft) parsed.spellDraft = { currentVectors: [], groups: [] };
-    if (!Array.isArray(parsed.spellDraft.currentVectors)) parsed.spellDraft.currentVectors = [];
-    if (!Array.isArray(parsed.spellDraft.groups)) parsed.spellDraft.groups = [];
+    if(!parsed || typeof parsed !== "object") return defaultState();
+
+    if(!parsed.spellDraft) parsed.spellDraft = { currentVectors: [], groups: [] };
+    if(!Array.isArray(parsed.spellDraft.currentVectors)) parsed.spellDraft.currentVectors = [];
+    if(!Array.isArray(parsed.spellDraft.groups)) parsed.spellDraft.groups = [];
+
+    if(!parsed.meta) parsed.meta = defaultState().meta;
+    if(!parsed.meta.chars) parsed.meta.chars = defaultState().meta.chars;
+    if(!parsed.skills) parsed.skills = {};
+    if(!parsed.traits) parsed.traits = [];
+    if(!parsed.equipment) parsed.equipment = [];
+    if(!parsed.spells) parsed.spells = [];
+
     return parsed;
   }catch{
     return defaultState();
   }
 }
+
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+/* ---------- Data loading ---------- */
+
 async function loadJSON(relPath){
   const url = new URL(relPath, BASE_URL);
   const res = await fetch(url, { cache: "no-store" });
-  if(!res.ok) throw new Error(`Fetch failed ${res.status} for ${url.href}`);
+  if(!res.ok){
+    throw new Error(`Fetch failed ${res.status} for ${url.href}`);
+  }
   return await res.json();
 }
 
@@ -109,15 +117,24 @@ async function loadDatabases(){
 }
 
 /* ---------- XP ---------- */
-function xpSpent(){ return (state.xpLog || []).reduce((a,x)=>a+clampInt(x.xp,0),0); }
-function xpRemaining(){ return clampInt(state.meta.xpBudget,0) - xpSpent(); }
-function addXpEntry(entry){ state.xpLog.push({ id: uid(), ...entry }); }
 
-/* ---------- Characteristics & Derived ---------- */
+function xpSpent(){
+  return (state.xpLog || []).reduce((a,x)=>a + clampInt(x.xp,0), 0);
+}
+function xpRemaining(){
+  return clampInt(state.meta.xpBudget,0) - xpSpent();
+}
+function addXpEntry(entry){
+  state.xpLog.push({ id: uid(), ...entry });
+}
+
+/* ---------- Derived stats ---------- */
+
 function costToRaiseCharacteristic(toValue){
-  const table = DB.rules.characteristic_raise_costs;
+  const table = DB.rules?.characteristic_raise_costs;
   return table ? clampInt(table[String(toValue)], null) : null;
 }
+
 function computeDerived(){
   const c = state.meta.chars;
   const mgt = clampInt(c.mgt, 1);
@@ -125,8 +142,8 @@ function computeDerived(){
   const wit = clampInt(c.wit, 1);
   const tgh = clampInt(c.tgh, 1);
 
-  const species = (DB.species.species || []).find(s => s.id === state.meta.speciesId);
-  const baseMove = clampInt(species?.base?.move, 0);
+  const sp = (DB.species?.species || []).find(s => s.id === state.meta.speciesId);
+  const baseMove = clampInt(sp?.base?.move, 0);
 
   const hp  = tgh + Math.floor(mgt / 2);
   const ap  = 3 + Math.floor(agi / 3);
@@ -135,6 +152,9 @@ function computeDerived(){
 
   return { hp, ap, rap, movePerAP };
 }
+
+/* ---------- Characteristics ---------- */
+
 function currentCharFromInputs(){
   return {
     mgt: clampInt(el("mgt").value, 1),
@@ -144,45 +164,55 @@ function currentCharFromInputs(){
     mtl: clampInt(el("mtl").value, 1),
   };
 }
+
 function computeCharUpgradeCost(oldC, newC){
   let total = 0;
   const lines = [];
+
   for(const key of ["mgt","agi","wit","tgh","mtl"]){
     const from = clampInt(oldC[key], 1);
     const to = clampInt(newC[key], 1);
+
     if(to < 1) return { ok:false, total:0, lines:[`Invalid ${key}.`] };
     if(to < from) return { ok:false, total:0, lines:[`Cannot decrease characteristics (${key.toUpperCase()}).`] };
     if(to === from) continue;
 
-    for(let v = from+1; v <= to; v++){
+    for(let v = from + 1; v <= to; v++){
       const c = costToRaiseCharacteristic(v);
       if(c == null) return { ok:false, total:0, lines:[`No XP cost defined for raising to ${v}.`] };
       total += c;
       lines.push(`${key.toUpperCase()} +${c} XP (raise to ${v})`);
     }
   }
+
   return { ok:true, total, lines };
 }
+
 function applyCharacteristicChanges(){
   const oldC = state.meta.chars;
   const newC = currentCharFromInputs();
   const cost = computeCharUpgradeCost(oldC, newC);
+
   if(!cost.ok) return alert(cost.lines.join("\n"));
   if(cost.total > xpRemaining()) return alert(`Not enough XP. Need ${cost.total}, have ${xpRemaining()}.`);
   if(cost.total === 0) return alert("No changes to apply.");
 
   addXpEntry({ kind:"characteristics", name:"Raise characteristics", xp: cost.total });
   state.meta.chars = newC;
-  saveState(); renderAll();
+
+  saveState();
+  renderAll();
 }
 
 /* ---------- Skills ---------- */
+
 function ensureSkillsInitialized(){
-  const basics = DB.skills.basic || [];
+  const basics = DB.skills?.basic || [];
   for(const s of basics){
     if(state.skills[s] == null) state.skills[s] = 20;
   }
 }
+
 function buyNewSkill(){
   const name = el("newSkillName").value.trim();
   if(!name) return alert("Enter a skill name.");
@@ -194,21 +224,27 @@ function buyNewSkill(){
   state.skills[name] = 20;
   addXpEntry({ kind:"skill_buy", name:`Buy skill: ${name}`, xp: cost });
   el("newSkillName").value = "";
-  saveState(); renderAll();
+
+  saveState();
+  renderAll();
 }
+
 function rebuildSkillSelect(){
   const sel = el("skillSelect");
   const prev = sel.value;
+
   sel.innerHTML = "";
   const names = Object.keys(state.skills || {}).sort((a,b)=>a.localeCompare(b));
-  for (const name of names){
+  for(const name of names){
     const o = document.createElement("option");
     o.value = name;
     o.textContent = `${name} (${state.skills[name]})`;
     sel.appendChild(o);
   }
-  if (prev && state.skills[prev] != null) sel.value = prev;
+
+  if(prev && state.skills[prev] != null) sel.value = prev;
 }
+
 function increaseSkill(){
   const name = el("skillSelect").value;
   if(!name) return;
@@ -218,31 +254,38 @@ function increaseSkill(){
 
   let totalCost = 0;
   for(let i=0;i<n;i++) totalCost += (current + i);
-  if(totalCost > xpRemaining()) return alert(`Not enough XP. Need ${totalCost}, have ${xpRemaining()}.`);
+
+  if(totalCost > xpRemaining()){
+    return alert(`Not enough XP. Need ${totalCost}, have ${xpRemaining()}.`);
+  }
 
   state.skills[name] = current + n;
   addXpEntry({ kind:"skill_inc", name:`${name} +${n} (${current}→${current+n})`, xp: totalCost });
 
-  saveState(); renderAll();
+  saveState();
+  renderAll();
   el("skillSelect").value = name;
 }
+
 function decreaseSkill(){
   const name = el("skillSelect").value;
   if(!name) return;
 
-  const basics = new Set(DB.skills.basic || []);
+  const basics = new Set(DB.skills?.basic || []);
   const current = clampInt(state.skills[name], 0);
 
   if(basics.has(name) && current <= 20) return alert("Basic skills can't go below 20.");
 
   if(!basics.has(name) && current <= 20){
+    // remove the skill (refund buy entry if present)
     const idx = [...state.xpLog].reverse().findIndex(x => x.kind==="skill_buy" && x.name===`Buy skill: ${name}`);
     if(idx !== -1){
       const realIndex = state.xpLog.length - 1 - idx;
       state.xpLog.splice(realIndex, 1);
     }
     delete state.skills[name];
-    saveState(); renderAll();
+    saveState();
+    renderAll();
     return;
   }
 
@@ -250,31 +293,35 @@ function decreaseSkill(){
   state.skills[name] = current - 1;
   addXpEntry({ kind:"refund", name:`Refund ${name} ${current}→${current-1}`, xp: -refund });
 
-  saveState(); renderAll();
+  saveState();
+  renderAll();
   el("skillSelect").value = name;
 }
 
 /* ---------- Traits ---------- */
+
 function rebuildTraits(){
   const sel = el("traitSelect");
   sel.innerHTML = "";
-  for(const t of (DB.traits.traits || [])){
+  for(const t of (DB.traits?.traits || [])){
     const o = document.createElement("option");
     o.value = t.id;
     o.textContent = `${t.name} (${t.xp} XP)`;
     sel.appendChild(o);
   }
 }
+
 function ownedTraits(){
   const ids = new Set(state.traits || []);
-  return (DB.traits.traits || []).filter(t => ids.has(t.id));
+  return (DB.traits?.traits || []).filter(t => ids.has(t.id));
 }
+
 function addTrait(){
   const id = el("traitSelect").value;
   if(!id) return;
   if(state.traits.includes(id)) return alert("Trait already added.");
 
-  const t = (DB.traits.traits || []).find(x => x.id === id);
+  const t = (DB.traits?.traits || []).find(x => x.id === id);
   if(!t) return alert("Trait not found in JSON.");
 
   const cost = clampInt(t.xp, 0);
@@ -283,20 +330,25 @@ function addTrait(){
   state.traits.push(id);
   addXpEntry({ kind:"trait", name:`Trait: ${t.name}`, xp: cost });
 
-  saveState(); renderAll();
+  saveState();
+  renderAll();
 }
+
 function removeTrait(id){
-  const t = (DB.traits.traits || []).find(x => x.id === id);
+  const t = (DB.traits?.traits || []).find(x => x.id === id);
   state.traits = state.traits.filter(x => x !== id);
   if(t) addXpEntry({ kind:"refund", name:`Refund trait: ${t.name}`, xp: -clampInt(t.xp,0) });
-  saveState(); renderAll();
+
+  saveState();
+  renderAll();
 }
 
 /* ---------- Species ---------- */
+
 function rebuildSpecies(){
   const sel = el("species");
   sel.innerHTML = "";
-  for(const s of (DB.species.species || [])){
+  for(const s of (DB.species?.species || [])){
     const o = document.createElement("option");
     o.value = s.id;
     o.textContent = s.name;
@@ -305,28 +357,34 @@ function rebuildSpecies(){
   sel.value = state.meta.speciesId || "human";
   sel.addEventListener("change", () => {
     state.meta.speciesId = sel.value;
-    saveState(); renderAll();
+    saveState();
+    renderAll();
   });
 }
 
 /* ---------- Equipment ---------- */
-function requiredMightForArmor(category){ return clampInt(DB.equipment.armorMightReq?.[category], 0); }
+
+function requiredMightForArmor(category){
+  return clampInt(DB.equipment?.armorMightReq?.[category], 0);
+}
 function requiredMightForWeapon(weapon){
-  if(weapon.weight === "heavy") return clampInt(DB.equipment.heavyWeaponMightReq, 4);
+  if(weapon.weight === "heavy") return clampInt(DB.equipment?.heavyWeaponMightReq, 4);
   return 0;
 }
+
 function rebuildEquipment(){
   const wSel = el("weaponSelect");
   wSel.innerHTML = "";
-  for(const w of (DB.equipment.equipment.weapons || [])){
+  for(const w of (DB.equipment?.equipment?.weapons || [])){
     const o = document.createElement("option");
     o.value = w.id;
     o.textContent = `${w.name} (${w.apCost} AP, ${w.damage})`;
     wSel.appendChild(o);
   }
+
   const aSel = el("armorSelect");
   aSel.innerHTML = "";
-  for(const a of (DB.equipment.equipment.armor || [])){
+  for(const a of (DB.equipment?.equipment?.armor || [])){
     const req = requiredMightForArmor(a.category);
     const o = document.createElement("option");
     o.value = a.id;
@@ -334,9 +392,10 @@ function rebuildEquipment(){
     aSel.appendChild(o);
   }
 }
+
 function addWeapon(){
   const id = el("weaponSelect").value;
-  const w = (DB.equipment.equipment.weapons || []).find(x => x.id === id);
+  const w = (DB.equipment?.equipment?.weapons || []).find(x => x.id === id);
   if(!w) return alert("Weapon not found in JSON.");
 
   const mgt = clampInt(state.meta.chars.mgt, 1);
@@ -344,11 +403,13 @@ function addWeapon(){
   if(mgt < req) return alert(`Requires Might ${req}+ for heavy weapons.`);
 
   state.equipment.push({ id: uid(), type:"weapon", equipped:true, data:w });
-  saveState(); renderAll();
+  saveState();
+  renderAll();
 }
+
 function addArmor(){
   const id = el("armorSelect").value;
-  const a = (DB.equipment.equipment.armor || []).find(x => x.id === id);
+  const a = (DB.equipment?.equipment?.armor || []).find(x => x.id === id);
   if(!a) return alert("Armor not found in JSON.");
 
   const mgt = clampInt(state.meta.chars.mgt, 1);
@@ -357,23 +418,34 @@ function addArmor(){
 
   for(const it of state.equipment) if(it.type === "armor") it.equipped = false;
   state.equipment.push({ id: uid(), type:"armor", equipped:true, data:a });
-  saveState(); renderAll();
+
+  saveState();
+  renderAll();
 }
+
 function toggleEquip(itemId){
   const it = state.equipment.find(x => x.id === itemId);
   if(!it) return;
+
   if(it.type === "armor" && !it.equipped){
     for(const x of state.equipment) if(x.type === "armor") x.equipped = false;
   }
   it.equipped = !it.equipped;
-  saveState(); renderAll();
+
+  saveState();
+  renderAll();
 }
+
 function removeEquip(itemId){
   state.equipment = state.equipment.filter(x => x.id !== itemId);
-  saveState(); renderAll();
+  saveState();
+  renderAll();
 }
+
 function equippedWeaponList(){
-  return (state.equipment || []).filter(x => x.type==="weapon" && x.equipped).map(x=>x.data);
+  return (state.equipment || [])
+    .filter(x => x.type==="weapon" && x.equipped)
+    .map(x=>x.data);
 }
 
 /* ---------- Spell Builder (combo groups) ---------- */
@@ -381,7 +453,7 @@ function equippedWeaponList(){
 function rebuildSpellEffects(){
   const eSel = el("spellEffects");
   eSel.innerHTML = "";
-  for(const e of (DB.effects.effects || [])){
+  for(const e of (DB.effects?.effects || [])){
     const o = document.createElement("option");
     o.value = e.id;
     o.textContent = e.name;
@@ -389,10 +461,10 @@ function rebuildSpellEffects(){
   }
 }
 
-function initSpellVectorUI() {
+function initSpellVectorUI(){
   const vSel = el("vectorAddSelect");
   vSel.innerHTML = "";
-  for (const v of (DB.vectors.vectors || [])) {
+  for(const v of (DB.vectors?.vectors || [])){
     const o = document.createElement("option");
     o.value = v.id;
     o.textContent = v.name;
@@ -401,20 +473,21 @@ function initSpellVectorUI() {
 
   const aSel = el("areaFormSelect");
   aSel.innerHTML = "";
-  for (const f of (DB.vectors.areaForms || [])) {
+  for(const f of (DB.vectors?.areaForms || [])){
     const o = document.createElement("option");
     o.value = f.id;
     o.textContent = f.name;
     aSel.appendChild(o);
   }
 
-  function refreshAreaControls() {
+  function refreshAreaControls(){
     const vecId = vSel.value;
-    const vec = (DB.vectors.vectors || []).find(x => x.id === vecId);
+    const vec = (DB.vectors?.vectors || []).find(x => x.id === vecId);
     const isArea = vec?.type === "area";
     el("areaFormSelect").disabled = !isArea;
     el("areaLevelInput").disabled = !isArea;
   }
+
   vSel.addEventListener("change", refreshAreaControls);
   refreshAreaControls();
 }
@@ -422,38 +495,36 @@ function initSpellVectorUI() {
 function draftVectors(){ return state.spellDraft.currentVectors; }
 function draftGroups(){ return state.spellDraft.groups; }
 
-function validateVectorChain(steps) {
-  // Disallow "area then totem" within a chain
+function validateVectorChain(steps){
   let areaSeen = false;
-  for (const s of steps) {
-    if (s.type === "area") areaSeen = true;
-    if (areaSeen && s.type === "totem") {
-      return { ok: false, msg: "Invalid chain: Area + Totem is not allowed. Use Totem + Area instead." };
+  for(const s of steps){
+    if(s.type === "area") areaSeen = true;
+    if(areaSeen && s.type === "totem"){
+      return { ok:false, msg:"Invalid chain: Area + Totem is not allowed. Use Totem + Area instead." };
     }
   }
-  return { ok: true };
+  return { ok:true };
 }
 
-function addVectorStepFromUI() {
+function addVectorStepFromUI(){
   const steps = draftVectors();
 
   const vecId = el("vectorAddSelect").value;
-  const vec = (DB.vectors.vectors || []).find(v => v.id === vecId);
-  if (!vec) return alert("Vector not found.");
+  const vec = (DB.vectors?.vectors || []).find(v => v.id === vecId);
+  if(!vec) return alert("Vector not found.");
 
   const step = { id: uid(), vectorId: vec.id, type: vec.type, name: vec.name };
 
-  if (vec.type === "area") {
+  if(vec.type === "area"){
     step.areaFormId = el("areaFormSelect").value;
-    step.areaFormName = (DB.vectors.areaForms || []).find(f => f.id === step.areaFormId)?.name || step.areaFormId;
+    step.areaFormName = (DB.vectors?.areaForms || []).find(f => f.id === step.areaFormId)?.name || step.areaFormId;
     step.areaLevel = clampInt(el("areaLevelInput").value, 0);
-    if (step.areaLevel <= 0) return alert("Area Level must be > 0.");
+    if(step.areaLevel <= 0) return alert("Area Level must be > 0.");
   }
 
   steps.push(step);
-
   const check = validateVectorChain(steps);
-  if (!check.ok) {
+  if(!check.ok){
     steps.pop();
     return alert(check.msg);
   }
@@ -464,7 +535,7 @@ function addVectorStepFromUI() {
   renderSpellTotalSL();
 }
 
-function removeVectorStep(stepId) {
+function removeVectorStep(stepId){
   state.spellDraft.currentVectors = draftVectors().filter(s => s.id !== stepId);
   saveState();
   renderVectorChain();
@@ -472,18 +543,18 @@ function removeVectorStep(stepId) {
   renderSpellTotalSL();
 }
 
-function renderVectorChain() {
+function renderVectorChain(){
   const list = el("vectorChainList");
   list.innerHTML = "";
 
   const steps = draftVectors();
-  if (!steps.length) {
+  if(!steps.length){
     el("vectorChainHint").style.display = "block";
     return;
   }
   el("vectorChainHint").style.display = "none";
 
-  for (const s of steps) {
+  for(const s of steps){
     const row = document.createElement("div");
     row.className = "item";
 
@@ -507,7 +578,6 @@ function renderVectorChain() {
   }
 }
 
-// Damage dice mapping by level :contentReference[oaicite:3]{index=3}
 function damageDiceByLevel(level){
   const map = {
     1: "1d3",
@@ -521,19 +591,16 @@ function damageDiceByLevel(level){
   return map[level] || null;
 }
 
-// Cost rules from doc:
-// Dart: 1 SL; Area: Level*2 SL; Totem: TotemLevel*3 SL; Damage: DamageLevel*2 SL :contentReference[oaicite:4]{index=4}
 function vectorCostSL(step, totemLevel){
   if(step.type === "dart") return 1;
   if(step.type === "area") return clampInt(step.areaLevel,0) * 2;
   if(step.type === "totem") return clampInt(totemLevel,0) * 3;
   return 0;
 }
+
 function effectCostSL(effectId, damageLevel){
   if(effectId === "damage") return clampInt(damageLevel,0) * 2;
-  // Status effects: flat SL costs are “depending on severity” in doc; keep 0 until you define. :contentReference[oaicite:5]{index=5}
-  // If you later add "slCost" into spell_effects.json, we’ll read it here.
-  const e = (DB.effects.effects || []).find(x => x.id === effectId);
+  const e = (DB.effects?.effects || []).find(x => x.id === effectId);
   if(e && typeof e.slCost === "number") return e.slCost;
   return 0;
 }
@@ -543,7 +610,7 @@ function addEffectGroupFromUI(){
   if(!vectors.length) return alert("You must add at least one Vector before adding Effects.");
 
   const check = validateVectorChain(vectors);
-  if (!check.ok) return alert(check.msg);
+  if(!check.ok) return alert(check.msg);
 
   const selected = Array.from(el("spellEffects").selectedOptions).map(o => o.value);
   if(!selected.length) return alert("Select at least one Effect for this group.");
@@ -558,9 +625,8 @@ function addEffectGroupFromUI(){
     return alert("Totem Level must be > 0 when Totem vector is used.");
   }
 
-  // Build group
   const effects = selected
-    .map(id => (DB.effects.effects || []).find(e => e.id === id))
+    .map(id => (DB.effects?.effects || []).find(e => e.id === id))
     .filter(Boolean)
     .map(e => ({ id: e.id, name: e.name }));
 
@@ -569,15 +635,13 @@ function addEffectGroupFromUI(){
     vectors: structuredClone(vectors),
     effects,
     damageLevel,
-    totemLevel, // group-level totem level (applies to any totem vector cost)
+    totemLevel,
     shortNote: el("spellShortNote").value.trim()
   };
 
-  // Push group, then start a new group automatically:
   state.spellDraft.groups.push(group);
   state.spellDraft.currentVectors = [];
 
-  // clear effect selection fields for next group
   el("spellDamageLevel").value = 0;
   el("spellShortNote").value = "";
   Array.from(el("spellEffects").options).forEach(o => o.selected = false);
@@ -650,30 +714,28 @@ function renderSpellDraftGroups(){
 function draftTotalSL(){
   let total = 0;
   for(const g of draftGroups()){
-    for(const v of (g.vectors || [])){
-      total += vectorCostSL(v, g.totemLevel);
-    }
-    for(const ef of (g.effects || [])){
-      total += effectCostSL(ef.id, g.damageLevel);
-    }
+    for(const v of (g.vectors || [])) total += vectorCostSL(v, g.totemLevel);
+    for(const ef of (g.effects || [])) total += effectCostSL(ef.id, g.damageLevel);
   }
   return total;
 }
 
 function renderSpellTotalSL(){
-  const total = draftTotalSL();
-  el("spellTotalSL").value = String(total);
+  el("spellTotalSL").value = String(draftTotalSL());
 }
 
 function clearSpellDraft(){
   state.spellDraft.groups = [];
   state.spellDraft.currentVectors = [];
+
   el("spellName").value = "";
   el("spellTotemLevel").value = 0;
   el("spellDamageLevel").value = 0;
   el("spellShortNote").value = "";
   el("spellText").value = "";
+
   Array.from(el("spellEffects").options).forEach(o => o.selected = false);
+
   saveState();
   renderVectorChain();
   renderSpellDraftGroups();
@@ -685,7 +747,6 @@ function addSpell(){
   if(!name) return alert("Spell name required.");
 
   if(draftVectors().length){
-    // prevent “dangling vectors”
     return alert("You have vectors in the current group but no effects yet. Add Effects Group first.");
   }
 
@@ -709,14 +770,17 @@ function addSpell(){
 
 function removeSpell(spellId){
   state.spells = state.spells.filter(s => s.id !== spellId);
-  saveState(); renderAll();
+  saveState();
+  renderAll();
 }
 
 /* ---------- Actions & Reactions ---------- */
+
 function unarmedDamage(){
   const mgt = clampInt(state.meta.chars.mgt, 1);
   return Math.max(1, Math.floor(mgt / 3));
 }
+
 function buildActionsAndReactions(){
   const d = computeDerived();
   const actions = [];
@@ -748,7 +812,8 @@ function buildActionsAndReactions(){
   return { derived:d, actions, reactions };
 }
 
-/* ---------- Rendering ---------- */
+/* ---------- Render ---------- */
+
 function renderXP(){
   el("xpBudgetLbl").textContent = String(clampInt(state.meta.xpBudget,0));
   el("xpSpentLbl").textContent = String(xpSpent());
@@ -774,25 +839,31 @@ function renderCharCostHint(){
   const oldC = state.meta.chars;
   const newC = currentCharFromInputs();
   const cost = computeCharUpgradeCost(oldC, newC);
-  el("charCostHint").textContent = (!cost.ok) ? cost.lines.join(" ") :
-    (cost.total === 0 ? "No changes." : `Cost if applied: ${cost.total} XP`);
+  el("charCostHint").textContent = (!cost.ok)
+    ? cost.lines.join(" ")
+    : (cost.total === 0 ? "No changes." : `Cost if applied: ${cost.total} XP`);
 }
 
 function renderSkills(){
   const list = el("skillsList");
   list.innerHTML = "";
+
   const names = Object.keys(state.skills || {}).sort((a,b)=>a.localeCompare(b));
   for(const name of names){
     const v = state.skills[name];
     const row = document.createElement("div");
     row.className = "item";
+
     const left = document.createElement("div");
     left.style.flex = "1";
     left.innerHTML = `<div class="title">${name}</div><div class="sub">Value: ${v}</div>`;
+
     row.appendChild(left);
     list.appendChild(row);
   }
+
   rebuildSkillSelect();
+
   const chosen = el("skillSelect").value;
   el("skillCostHint").textContent = chosen
     ? `Increase ${chosen}: +1 costs current value in XP. Increase by N costs sum of the next N steps.`
@@ -802,16 +873,22 @@ function renderSkills(){
 function renderTraits(){
   const list = el("traitsList");
   list.innerHTML = "";
+
   const owned = ownedTraits();
-  if(owned.length === 0){ el("emptyTraits").style.display = "block"; return; }
+  if(owned.length === 0){
+    el("emptyTraits").style.display = "block";
+    return;
+  }
   el("emptyTraits").style.display = "none";
 
   for(const t of owned){
     const row = document.createElement("div");
     row.className = "item";
+
     const left = document.createElement("div");
     left.style.flex = "1";
     left.innerHTML = `<div class="title">${t.name}</div><div class="sub">${t.desc || ""}</div>`;
+
     const right = document.createElement("div");
     right.className = "right";
     const rm = document.createElement("button");
@@ -819,6 +896,7 @@ function renderTraits(){
     rm.textContent = "Remove";
     rm.addEventListener("click", ()=>removeTrait(t.id));
     right.appendChild(rm);
+
     row.appendChild(left);
     row.appendChild(right);
     list.appendChild(row);
@@ -828,16 +906,24 @@ function renderTraits(){
 function renderEquipment(){
   const list = el("equipList");
   list.innerHTML = "";
-  if((state.equipment || []).length === 0){ el("emptyEquip").style.display = "block"; return; }
+
+  if((state.equipment || []).length === 0){
+    el("emptyEquip").style.display = "block";
+    return;
+  }
   el("emptyEquip").style.display = "none";
 
   for(const it of state.equipment){
     const row = document.createElement("div");
     row.className = "item";
+
     const left = document.createElement("div");
     left.style.flex = "1";
-    const tag = it.type === "armor" ? `Armor • DR ${it.data.dr}` : `Weapon • ${it.data.apCost} AP • ${it.data.damage}`;
+    const tag = it.type === "armor"
+      ? `Armor • DR ${it.data.dr}`
+      : `Weapon • ${it.data.apCost} AP • ${it.data.damage}`;
     left.innerHTML = `<div class="title">${it.data.name}</div><div class="sub">${tag}</div>`;
+
     const right = document.createElement("div");
     right.className = "right";
 
@@ -853,6 +939,7 @@ function renderEquipment(){
 
     right.appendChild(eq);
     right.appendChild(rm);
+
     row.appendChild(left);
     row.appendChild(right);
     list.appendChild(row);
@@ -872,6 +959,7 @@ function renderSpells(){
   for(const sp of [...state.spells].reverse()){
     const row = document.createElement("div");
     row.className = "item";
+
     const left = document.createElement("div");
     left.style.flex = "1";
 
@@ -900,10 +988,11 @@ function renderSpells(){
 
 function renderSheet(){
   const d = computeDerived();
-  const species = (DB.species.species || []).find(s => s.id === state.meta.speciesId);
+  const species = (DB.species?.species || []).find(s => s.id === state.meta.speciesId);
 
   el("sheetName").textContent = state.meta.name?.trim() ? state.meta.name : "Unnamed";
-  el("sheetMeta").textContent = `${state.meta.concept || "—"} • ${species?.name || "—"} • XP: ${xpSpent()}/${clampInt(state.meta.xpBudget,0)} (rem ${xpRemaining()})`;
+  el("sheetMeta").textContent =
+    `${state.meta.concept || "—"} • ${species?.name || "—"} • XP: ${xpSpent()}/${clampInt(state.meta.xpBudget,0)} (rem ${xpRemaining()})`;
 
   el("sheetHP").textContent = String(d.hp);
   el("sheetAP").textContent = String(d.ap);
@@ -978,7 +1067,7 @@ function renderAll(){
   renderSheet();
 }
 
-/* ---------- UI Population & Bindings ---------- */
+/* ---------- UI bindings ---------- */
 
 function bindUI(){
   el("name").addEventListener("input", (e)=>{ state.meta.name = e.target.value; saveState(); renderAll(); });
@@ -986,7 +1075,7 @@ function bindUI(){
   el("xpBudget").addEventListener("input", (e)=>{ state.meta.xpBudget = clampInt(e.target.value,0); saveState(); renderAll(); });
 
   for(const id of ["mgt","agi","wit","tgh","mtl"]){
-    el(id).addEventListener("input", ()=>{ renderCharCostHint(); });
+    el(id).addEventListener("input", ()=>renderCharCostHint());
   }
   el("applyCharBtn").addEventListener("click", applyCharacteristicChanges);
 
@@ -999,7 +1088,7 @@ function bindUI(){
   el("addWeaponBtn").addEventListener("click", addWeapon);
   el("addArmorBtn").addEventListener("click", addArmor);
 
-  // Spell builder
+  // spells
   el("addVectorBtn").addEventListener("click", addVectorStepFromUI);
   el("addEffectGroupBtn").addEventListener("click", addEffectGroupFromUI);
   el("addSpellBtn").addEventListener("click", addSpell);
@@ -1016,9 +1105,11 @@ function bindUI(){
       if(!raw) return alert("Paste JSON first.");
       const parsed = JSON.parse(raw);
       state = parsed;
+
       if (!state.spellDraft) state.spellDraft = { currentVectors: [], groups: [] };
       if (!Array.isArray(state.spellDraft.currentVectors)) state.spellDraft.currentVectors = [];
       if (!Array.isArray(state.spellDraft.groups)) state.spellDraft.groups = [];
+
       saveState();
       renderAll();
     }catch(err){
@@ -1039,11 +1130,12 @@ function bindUI(){
 }
 
 /* ---------- Boot ---------- */
+
 async function init(){
   try{
     await loadDatabases();
 
-    // quick sanity logs
+    // sanity log: should show objects, not null
     console.log("Loaded DB:", {
       species: DB.species,
       traits: DB.traits,
@@ -1068,18 +1160,5 @@ async function init(){
     showFatal(e?.stack || String(e));
   }
 }
-init();
 
-
-  ensureSkillsInitialized();
-
-  rebuildSpecies();
-  rebuildTraits();
-  rebuildEquipment();
-  rebuildSpellEffects();
-  initSpellVectorUI();
-
-  bindUI();
-  renderAll();
-}
 init();
