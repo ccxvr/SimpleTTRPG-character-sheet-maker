@@ -1,0 +1,42 @@
+{
+  "traits": [
+    {
+      "id": "grappler",
+      "name": "Grappler",
+      "xp": 45,
+      "desc": "You gain access to the Grapple action.",
+      "grants": {
+        "actions": [
+          {
+            "id": "grapple",
+            "name": "Grapple",
+            "apCost": 2,
+            "text": "Replace a melee attack with a Grapple attempt: roll Melee vs target Dodge. On success: target Grappled (cannot move). Escape: target spends 2 AP to roll Dodge opposed by your active Melee; compare Success Levels."
+          }
+        ],
+        "reactions": []
+      }
+    },
+    {
+      "id": "evasive_footwork",
+      "name": "Evasive Footwork",
+      "xp": 30,
+      "desc": "Your first Dodge each round costs 0 RAP.",
+      "grants": { "actions": [], "reactions": [] }
+    },
+    {
+      "id": "swift_riposte",
+      "name": "Swift Riposte",
+      "xp": 40,
+      "desc": "Your Reaction Attacks cost 1 less RAP (minimum 1).",
+      "grants": { "actions": [], "reactions": [] }
+    },
+    {
+      "id": "martial_artist",
+      "name": "Martial Artist",
+      "xp": 40,
+      "desc": "Unarmed attacks count as Light weapons: damage becomes 1d3 + floor(Might/3).",
+      "grants": { "actions": [], "reactions": [] }
+    }
+  ]
+}

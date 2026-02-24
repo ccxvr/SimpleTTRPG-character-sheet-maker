@@ -1,0 +1,10 @@
+{
+  "basic": [
+    "Melee",
+    "Ranged",
+    "Dodge",
+    "Perception",
+    "Athletics",
+    "Stealth"
+  ]
+}
