@@ -980,53 +980,6 @@ function renderAll(){
 
 /* ---------- UI Population & Bindings ---------- */
 
-function rebuildSpecies(){
-  const sel = el("species");
-  sel.innerHTML = "";
-  for(const s of (DB.species.species || [])){
-    const o = document.createElement("option");
-    o.value = s.id;
-    o.textContent = s.name;
-    sel.appendChild(o);
-  }
-  sel.value = state.meta.speciesId || "human";
-  sel.addEventListener("change", () => {
-    state.meta.speciesId = sel.value;
-    saveState(); renderAll();
-  });
-}
-function rebuildTraits(){
-  const sel = el("traitSelect");
-  sel.innerHTML = "";
-  for(const t of (DB.traits.traits || [])){
-    const o = document.createElement("option");
-    o.value = t.id;
-    o.textContent = `${t.name} (${t.xp} XP)`;
-    sel.appendChild(o);
-  }
-}
-function rebuildEquipment(){
-  const wSel = el("weaponSelect");
-  wSel.innerHTML = "";
-  for(const w of (DB.equipment.equipment.weapons || [])){
-    const o = document.createElement("option");
-    o.value = w.id;
-    o.textContent = `${w.name} (${w.apCost} AP, ${w.damage})`;
-    wSel.appendChild(o);
-  }
-
-  const aSel = el("armorSelect");
-  aSel.innerHTML = "";
-  for(const a of (DB.equipment.equipment.armor || [])){
-    const req = requiredMightForArmor(a.category);
-    const o = document.createElement("option");
-    o.value = a.id;
-    o.textContent = `${a.name} (DR ${a.dr}, req MGT ${req})`;
-    aSel.appendChild(o);
-  }
-}
-function requiredMightForArmor(category){ return clampInt(DB.equipment.armorMightReq?.[category], 0); }
-
 function bindUI(){
   el("name").addEventListener("input", (e)=>{ state.meta.name = e.target.value; saveState(); renderAll(); });
   el("concept").addEventListener("input", (e)=>{ state.meta.concept = e.target.value; saveState(); renderAll(); });
