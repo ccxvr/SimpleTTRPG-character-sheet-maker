@@ -1,6 +1,150 @@
 {
   "traits": [
     {
+      "id": "weakspot_exploit",
+      "name": "Weakspot Exploit",
+      "xp": 30,
+      "desc": "When you roll maximum damage on your weapon die, ignore Armor DR for that attack (Dodge DR still applies).",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "brutal_swing",
+      "name": "Brutal Swing",
+      "xp": 40,
+      "desc": "When using a Heavy weapon: if Success Level ≥ 2, add +1 damage; on Critical Success, add +2 instead.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "flurry",
+      "name": "Flurry",
+      "xp": 45,
+      "desc": "Once per round, you may make one Light weapon attack at 0 AP cost during your activation.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "executioner",
+      "name": "Executioner",
+      "xp": 45,
+      "desc": "When you reduce a target to 0 HP with an attack, refund the AP cost of that attack. If it was a Reaction Attack, refund the RAP spent.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "calculated_strike",
+      "name": "Calculated Strike",
+      "xp": 40,
+      "desc": "Before making a melee or ranged attack, you may spend additional AP to gain +10 to the attack roll per AP (max +30).",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "evasive_footwork",
+      "name": "Evasive Footwork",
+      "xp": 30,
+      "desc": "Your first Dodge each round costs 0 RAP.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "reactive_guard",
+      "name": "Reactive Guard",
+      "xp": 35,
+      "desc": "When you successfully Dodge, gain +1 Armor DR until your next activation.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "iron_body",
+      "name": "Iron Body",
+      "xp": 40,
+      "desc": "Once per round, reduce final damage taken by 1 (after all DR).",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "unyielding_mind",
+      "name": "Unyielding Mind",
+      "xp": 35,
+      "desc": "When you fail a Mental check, you do not lose AP (critical failure effects still apply).",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "swift_riposte",
+      "name": "Swift Riposte",
+      "xp": 40,
+      "desc": "Your Reaction Attacks cost 1 less RAP (minimum 1).",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "intercepting_reach",
+      "name": "Intercepting Reach",
+      "xp": 45,
+      "desc": "You may make a Reaction Attack when an enemy enters your melee reach, even if they began movement outside your reach.",
+      "grants": {
+        "actions": [],
+        "reactions": [
+          {
+            "id": "reaction_attack_enter_reach",
+            "name": "Reaction Attack: Entering Reach",
+            "rapCost": "weapon AP cost (modified by traits; minimum 1)",
+            "text": "Trigger: an enemy enters your melee reach. Effect: you may make a Reaction Attack against that enemy."
+          }
+        ]
+      }
+    },
+    {
+      "id": "lockdown",
+      "name": "Lockdown",
+      "xp": 50,
+      "desc": "When you hit a target with a Reaction Attack, their movement speed becomes 0 for the rest of that movement action.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "opportunist",
+      "name": "Opportunist",
+      "xp": 40,
+      "desc": "When an enemy within your melee reach is attacked by another character, you may spend RAP equal to your weapon’s AP cost to make a Reaction Attack against that enemy (works with Light, Normal, or Heavy weapons).",
+      "grants": {
+        "actions": [],
+        "reactions": [
+          {
+            "id": "reaction_attack_opportunist",
+            "name": "Reaction Attack: Opportunist",
+            "rapCost": "weapon AP cost",
+            "text": "Trigger: an enemy within your melee reach is attacked by another character. Effect: make a Reaction Attack against that enemy."
+          }
+        ]
+      }
+    },
+    {
       "id": "grappler",
       "name": "Grappler",
       "xp": 45,
@@ -11,32 +155,81 @@
             "id": "grapple",
             "name": "Grapple",
             "apCost": 2,
-            "text": "Replace a melee attack with a Grapple attempt: roll Melee vs target Dodge. On success: target Grappled (cannot move). Escape: target spends 2 AP to roll Dodge opposed by your active Melee; compare Success Levels."
+            "text": "Replace a melee attack with a Grapple attempt: roll Melee vs target Dodge. On success: target becomes Grappled (cannot move). Escape: target spends 2 AP to roll Dodge opposed by your active Melee; compare Success Levels (higher wins). Grapple ends if the grappler is incapacitated."
           }
         ],
         "reactions": []
       }
     },
     {
-      "id": "evasive_footwork",
-      "name": "Evasive Footwork",
-      "xp": 30,
-      "desc": "Your first Dodge each round costs 0 RAP.",
-      "grants": { "actions": [], "reactions": [] }
+      "id": "disarm",
+      "name": "Disarm",
+      "xp": 35,
+      "desc": "On Success Level ≥ 3 with a melee attack, the target must succeed a Dodge check or drop their weapon.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
     },
     {
-      "id": "swift_riposte",
-      "name": "Swift Riposte",
+      "id": "mobile_skirmisher",
+      "name": "Mobile Skirmisher",
       "xp": 40,
-      "desc": "Your Reaction Attacks cost 1 less RAP (minimum 1).",
-      "grants": { "actions": [], "reactions": [] }
+      "desc": "Once per round, move up to half your base movement for 0 AP. This movement does not trigger Reaction Attacks.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "suppressive_fire",
+      "name": "Suppressive Fire",
+      "xp": 45,
+      "desc": "Each successful ranged attack forces the target to make a Mental check; on failure, the target loses 1 RAP next round.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "deadeye",
+      "name": "Deadeye",
+      "xp": 45,
+      "desc": "When making ranged attacks, rolls of 10, 20, 30, 40, etc. that are successful (≤ skill) count as Critical Success.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "perfect_form",
+      "name": "Perfect Form",
+      "xp": 50,
+      "desc": "When you roll doubles on an attack and it is a Critical Success, deal extra damage equal to the units of the critical (eg 33=+3 damage).",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
+    },
+    {
+      "id": "armor_breaker",
+      "name": "Armor Breaker",
+      "xp": 35,
+      "desc": "On a successful Heavy weapon hit, reduce the target’s Armor DR by 1 until the start of your next activation (does not stack).",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
     },
     {
       "id": "martial_artist",
       "name": "Martial Artist",
       "xp": 40,
-      "desc": "Unarmed attacks count as Light weapons: damage becomes 1d3 + floor(Might/3).",
-      "grants": { "actions": [], "reactions": [] }
+      "desc": "Unarmed attacks count as Light weapons; damage becomes 1d3 + floor(Might/3). You may apply Light-weapon traits (such as Flurry) to unarmed attacks.",
+      "grants": {
+        "actions": [],
+        "reactions": []
+      }
     }
   ]
 }
