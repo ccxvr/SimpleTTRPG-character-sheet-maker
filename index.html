@@ -1,72 +1,333 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Simple TTRPG Builder</title>
-<style>
-body { font-family: Arial; margin:20px; }
-.panel { border:1px solid #ccc; padding:15px; margin-bottom:20px; }
-.row { display:flex; gap:15px; margin-bottom:10px; }
-input, select, textarea { width:100%; padding:5px; }
-textarea { min-height:80px; }
-.sheet { white-space:pre-wrap; border:1px solid #000; padding:20px; }
-@media print {
-  body * { visibility:hidden; }
-  #printArea, #printArea * { visibility:visible; }
-  #printArea { position:absolute; left:0; top:0; width:100%; }
-}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple TTRPG – Character Builder</title>
+  <style>
+    :root { font-family: system-ui, Arial, sans-serif; }
+    body { margin: 0; background:#0f1115; color:#e9eef7; }
+    header { padding: 14px 16px; border-bottom:1px solid #252b36; background:#121522; }
+    h1 { margin:0; font-size: 18px; }
+    main { display:grid; grid-template-columns: 460px 1fr; gap: 14px; padding: 14px; }
+    @media (max-width: 980px){ main { grid-template-columns: 1fr; } }
+
+    .panel { background:#121522; border:1px solid #252b36; border-radius:10px; overflow:hidden; }
+    .hd { padding:10px 12px; border-bottom:1px solid #252b36; display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    .bd { padding:12px; }
+
+    label { display:block; font-size:12px; color:#b8c2d6; margin-bottom:6px; }
+    input, select, textarea, button {
+      width:100%; box-sizing:border-box;
+      padding:9px 10px; border-radius:8px;
+      border:1px solid #30384a; background:#0f1320; color:#e9eef7;
+      outline:none;
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    button { cursor:pointer; }
+    button.primary { background:#2b6cff; border-color:#2b6cff; }
+    button.danger { background:#ff3b3b; border-color:#ff3b3b; }
+    button.small { width:auto; padding:7px 10px; font-size:12px; }
+    button.ghost { background:transparent; }
+
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+    .muted { color:#b8c2d6; font-size:12px; }
+
+    .pill { display:inline-flex; gap:8px; align-items:center; border:1px solid #30384a; background:#0f1320; border-radius:999px; padding:6px 10px; font-size:12px; }
+    .list { display:flex; flex-direction:column; gap:8px; }
+    .item { border:1px solid #252b36; background:#0f1320; border-radius:10px; padding:10px; display:flex; justify-content:space-between; gap:10px; align-items:flex-start;}
+    .title { font-weight:700; }
+    .sub { font-size:12px; color:#b8c2d6; margin-top:2px; }
+    .right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
+    .badge { font-size:12px; padding:3px 8px; border:1px solid #30384a; border-radius:999px; color:#b8c2d6; }
+
+    .sheet {
+      background:#fff; color:#111; border-radius:10px; border:1px solid #d7dbe4;
+      padding:14px; white-space:pre-wrap;
+    }
+    .sheet h2 { margin:0 0 8px 0; font-size:18px; }
+    .sheet small { color:#555; }
+    .sheet hr { border:none; border-top:1px solid #e6e8ee; margin:10px 0; }
+
+    @media print {
+      body { background:#fff; color:#111; }
+      header, .left { display:none !important; }
+      main { grid-template-columns: 1fr; padding:0; }
+      .panel { border:none; }
+      .sheet { border:none; border-radius:0; }
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <h1>Simple TTRPG – Character Builder</h1>
+  </header>
 
-<h1>Simple TTRPG Character Builder</h1>
+  <main>
+    <!-- LEFT -->
+    <section class="panel left">
+      <div class="hd">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <span class="pill">Budget: <strong id="xpBudgetLbl">0</strong></span>
+          <span class="pill">Spent: <strong id="xpSpentLbl">0</strong></span>
+          <span class="pill">Remaining: <strong id="xpRemainingLbl">0</strong></span>
+        </div>
+        <button class="small ghost" id="resetBtn">Reset</button>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div>
+            <label>Name</label>
+            <input id="name" placeholder="e.g., Marcus Valen" />
+          </div>
+          <div>
+            <label>Species</label>
+            <select id="species"></select>
+          </div>
+        </div>
 
-<div class="panel">
-  <h3>Character</h3>
-  <div class="row">
-    <div><label>Name</label><input id="name"></div>
-    <div><label>Species</label><select id="species"></select></div>
-  </div>
-  <div class="row">
-    <div><label>Might</label><input id="might" type="number"></div>
-    <div><label>Agility</label><input id="agility" type="number"></div>
-    <div><label>Wit</label><input id="wit" type="number"></div>
-    <div><label>Will</label><input id="will" type="number"></div>
-    <div><label>Toughness</label><input id="toughness" type="number"></div>
-  </div>
-</div>
+        <div class="row">
+          <div>
+            <label>Concept</label>
+            <input id="concept" placeholder="e.g., Mercenary, Mage..." />
+          </div>
+          <div>
+            <label>Starting XP Budget</label>
+            <input id="xpBudget" type="number" min="0" step="1" />
+          </div>
+        </div>
 
-<div class="panel">
-  <h3>Traits</h3>
-  <select id="traitSelect"></select>
-  <button onclick="addTrait()">Add Trait</button>
-  <div id="traitList"></div>
-</div>
+        <div style="height:10px"></div>
 
-<div class="panel">
-  <h3>Equipment</h3>
-  <select id="weaponSelect"></select>
-  <button onclick="addWeapon()">Add Weapon</button>
-  <div id="weaponList"></div>
-</div>
+        <div class="panel" style="border-radius:10px;">
+          <div class="hd"><strong>Characteristics</strong><span class="muted">All start at 1</span></div>
+          <div class="bd">
+            <div class="row3">
+              <div><label>Might</label><input id="mgt" type="number" min="1" step="1"></div>
+              <div><label>Agility</label><input id="agi" type="number" min="1" step="1"></div>
+              <div><label>Wits</label><input id="wit" type="number" min="1" step="1"></div>
+            </div>
+            <div class="row3" style="margin-top:10px;">
+              <div><label>Toughness</label><input id="tgh" type="number" min="1" step="1"></div>
+              <div><label>Mental</label><input id="mtl" type="number" min="1" step="1"></div>
+              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                <button class="primary" id="applyCharBtn">Apply Changes (XP)</button>
+              </div>
+            </div>
+            <div class="muted" id="charCostHint" style="margin-top:10px;">—</div>
+          </div>
+        </div>
 
-<div class="panel">
-  <h3>Spell Builder</h3>
-  <input id="spellName" placeholder="Spell Name">
-  <select id="spellVector"></select>
-  <select id="spellEffects" multiple size="4"></select>
-  <textarea id="spellText" placeholder="Spell description"></textarea>
-  <button onclick="addSpell()">Add Spell</button>
-  <div id="spellList"></div>
-</div>
+        <div style="height:12px"></div>
 
-<button onclick="window.print()">Print / Save as PDF</button>
+        <div class="panel" style="border-radius:10px;">
+          <div class="hd"><strong>Skills</strong><span class="muted">Basics start at 20</span></div>
+          <div class="bd">
+            <div class="row3">
+              <div>
+                <label>Buy New Specialized Skill</label>
+                <input id="newSkillName" placeholder="e.g., Medicine" />
+              </div>
+              <div>
+                <label>Cost</label>
+                <input value="20 XP" disabled />
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                <button id="buySkillBtn">Buy Skill</button>
+              </div>
+            </div>
 
-<hr>
+            <div style="height:10px"></div>
 
-<h2>Character Sheet Preview</h2>
-<div id="printArea" class="sheet"></div>
+            <div class="row">
+              <div>
+                <label>Select Skill</label>
+                <select id="skillSelect"></select>
+              </div>
+              <div style="display:flex; gap:10px; align-items:flex-end;">
+                <button class="primary" id="incSkillBtn">Increase +1 (XP)</button>
+                <button class="ghost" id="decSkillBtn">Decrease -1 (Refund)</button>
+              </div>
+            </div>
 
-<script src="app.js"></script>
+            <div class="muted" id="skillCostHint" style="margin-top:10px;">—</div>
+
+            <div style="height:10px"></div>
+            <div class="list" id="skillsList"></div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="panel" style="border-radius:10px;">
+          <div class="hd"><strong>Traits</strong><span class="muted">XP</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Trait</label>
+                <select id="traitSelect"></select>
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                <button class="primary" id="addTraitBtn">Add Trait</button>
+              </div>
+            </div>
+            <div style="height:10px"></div>
+            <div class="list" id="traitsList"></div>
+            <div class="muted" id="emptyTraits">No traits.</div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="panel" style="border-radius:10px;">
+          <div class="hd"><strong>Equipment</strong><span class="muted">No XP, has Might req</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Weapon</label>
+                <select id="weaponSelect"></select>
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                <button id="addWeaponBtn">Add Weapon</button>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label>Armor</label>
+                <select id="armorSelect"></select>
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                <button id="addArmorBtn">Add Armor</button>
+              </div>
+            </div>
+
+            <div style="height:10px"></div>
+            <div class="list" id="equipList"></div>
+            <div class="muted" id="emptyEquip">No equipment.</div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="panel" style="border-radius:10px;">
+          <div class="hd"><strong>Spell Builder</strong><span class="muted">Vector + effects</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Spell Name</label>
+                <input id="spellName" placeholder="e.g., Fireball" />
+              </div>
+              <div>
+                <label>Vector</label>
+                <select id="spellVector"></select>
+              </div>
+            </div>
+
+            <div style="margin-top:10px;">
+              <label>Effects (multi-select)</label>
+              <select id="spellEffects" multiple size="6"></select>
+              <div class="muted" style="margin-top:6px;">Hold Ctrl/Cmd to select multiple.</div>
+            </div>
+
+            <div class="row3" style="margin-top:10px;">
+              <div><label>Area Level</label><input id="spellAreaLevel" type="number" min="0" step="1" placeholder="0"></div>
+              <div><label>Damage Level</label><input id="spellDamageLevel" type="number" min="0" step="1" placeholder="0"></div>
+              <div><label>Totem Level</label><input id="spellTotemLevel" type="number" min="0" step="1" placeholder="0"></div>
+            </div>
+
+            <div style="margin-top:10px;">
+              <label>Notes / Rules Text</label>
+              <textarea id="spellText" placeholder="Optional extra notes..."></textarea>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+              <button class="primary small" id="addSpellBtn">Add Spell</button>
+              <button class="ghost small" id="clearSpellBtn">Clear</button>
+            </div>
+
+            <div style="height:10px"></div>
+            <div class="list" id="spellsList"></div>
+            <div class="muted" id="emptySpells">No spells.</div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="panel" style="border-radius:10px;">
+          <div class="hd"><strong>Notes</strong><span class="muted">Auto-saved</span></div>
+          <div class="bd">
+            <textarea id="notes" placeholder="Backstory, gear notes, spell loadout, etc."></textarea>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="ghost small" id="exportBtn">Export JSON</button>
+          <button class="ghost small" id="importBtn">Import JSON</button>
+          <button class="ghost small" id="printBtn">Print / Save PDF</button>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label>Export / Import</label>
+          <textarea id="jsonBox" placeholder="Export shows here. Paste JSON here to import."></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <section class="panel">
+      <div class="hd">
+        <strong>Printable Sheet</strong>
+        <span class="muted">Use Print → Save as PDF</span>
+      </div>
+      <div class="bd">
+        <div class="sheet" id="sheet">
+          <h2 id="sheetName">Unnamed</h2>
+          <small id="sheetMeta">—</small>
+
+          <hr />
+          <small><strong>Characteristics</strong></small>
+          <div id="sheetChars">—</div>
+
+          <hr />
+          <small><strong>Derived</strong></small>
+          <div id="sheetDerived">—</div>
+
+          <hr />
+          <small><strong>Skills</strong></small>
+          <div id="sheetSkills">—</div>
+
+          <hr />
+          <small><strong>Traits</strong></small>
+          <div id="sheetTraits">—</div>
+
+          <hr />
+          <small><strong>Equipment</strong></small>
+          <div id="sheetEquip">—</div>
+
+          <hr />
+          <small><strong>Actions</strong> (AP total: <span id="sheetAPTotal">0</span>)</small>
+          <div id="sheetActions">—</div>
+
+          <hr />
+          <small><strong>Reactions</strong> (RAP total: <span id="sheetRAPTotal">0</span>)</small>
+          <div id="sheetReactions">—</div>
+
+          <hr />
+          <small><strong>Spells</strong></small>
+          <div id="sheetSpells">—</div>
+
+          <hr />
+          <small><strong>Notes</strong></small>
+          <div id="sheetNotes">—</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
 </body>
 </html>
