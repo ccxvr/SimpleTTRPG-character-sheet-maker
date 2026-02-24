@@ -8,6 +8,25 @@
 const STORAGE_KEY = "simple_ttrpg_char_v4";
 const BASE_URL = new URL(".", import.meta.url);
 
+function showFatal(msg){
+  console.error(msg);
+  // Put a visible red error on the page
+  const div = document.createElement("div");
+  div.style.cssText = "position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;background:#3b0b0b;color:#fff;border:1px solid #ff5555;padding:10px;border-radius:10px;font-family:system-ui;white-space:pre-wrap;";
+  div.textContent = "APP ERROR:\n" + msg;
+  document.body.appendChild(div);
+}
+
+async function loadJSON(relPath){
+  const url = new URL(relPath, BASE_URL);
+  const res = await fetch(url, { cache: "no-store" });
+  if(!res.ok){
+    throw new Error(`Fetch failed ${res.status} for ${url.href}`);
+  }
+  return await res.json();
+}
+
+
 let DB = {
   species: null,
   traits: null,
@@ -18,7 +37,12 @@ let DB = {
   rules: null,
 };
 
-function el(id){ return document.getElementById(id); }
+function el(id){
+  const node = document.getElementById(id);
+  if(!node) throw new Error(`Missing element id="${id}" in index.html`);
+  return node;
+}
+
 function clampInt(n, fallback=0){
   const x = Number.parseInt(n, 10);
   return Number.isFinite(x) ? x : fallback;
@@ -1065,11 +1089,34 @@ function bindUI(){
 async function init(){
   try{
     await loadDatabases();
+
+    // quick sanity logs
+    console.log("Loaded DB:", {
+      species: DB.species,
+      traits: DB.traits,
+      equipment: DB.equipment,
+      vectors: DB.vectors,
+      effects: DB.effects,
+      skills: DB.skills,
+      rules: DB.rules
+    });
+
+    ensureSkillsInitialized();
+
+    rebuildSpecies();
+    rebuildTraits();
+    rebuildEquipment();
+    rebuildSpellEffects();
+    initSpellVectorUI();
+
+    bindUI();
+    renderAll();
   }catch(e){
-    alert("Failed to load JSON data.\nCheck your /data folder and filenames.\n\n" + String(e));
-    console.error(e);
-    return;
+    showFatal(e?.stack || String(e));
   }
+}
+init();
+
 
   ensureSkillsInitialized();
 
