@@ -44,10 +44,8 @@
 
     .sheet {
       background:#fff; color:#111; border-radius:10px; border:1px solid #d7dbe4;
-      padding:14px; white-space:pre-wrap;
+      padding:14px;
     }
-    .sheet h2 { margin:0 0 8px 0; font-size:18px; }
-    .sheet small { color:#555; }
     .sheet hr { border:none; border-top:1px solid #e6e8ee; margin:10px 0; }
 
     @media print {
@@ -75,6 +73,7 @@
         </div>
         <button class="small ghost" id="resetBtn">Reset</button>
       </div>
+
       <div class="bd">
         <div class="row">
           <div>
@@ -145,10 +144,15 @@
                 <label>Select Skill</label>
                 <select id="skillSelect"></select>
               </div>
-              <div style="display:flex; gap:10px; align-items:flex-end;">
-                <button class="primary" id="incSkillBtn">Increase +1 (XP)</button>
-                <button class="ghost" id="decSkillBtn">Decrease -1 (Refund)</button>
+              <div>
+                <label>Increase by</label>
+                <input id="skillIncBy" type="number" min="1" step="1" value="1" />
               </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:10px;">
+              <button class="primary" id="incSkillBtn">Increase (XP)</button>
+              <button class="ghost" id="decSkillBtn">Decrease -1 (Refund)</button>
             </div>
 
             <div class="muted" id="skillCostHint" style="margin-top:10px;">—</div>
@@ -211,8 +215,9 @@
 
         <div style="height:12px"></div>
 
+        <!-- SPELL BUILDER (updated) -->
         <div class="panel" style="border-radius:10px;">
-          <div class="hd"><strong>Spell Builder</strong><span class="muted">Vector + effects</span></div>
+          <div class="hd"><strong>Spell Builder</strong><span class="muted">Vectors chain + effects</span></div>
           <div class="bd">
             <div class="row">
               <div>
@@ -220,9 +225,29 @@
                 <input id="spellName" placeholder="e.g., Fireball" />
               </div>
               <div>
-                <label>Vector</label>
-                <select id="spellVector"></select>
+                <label>Add Vector</label>
+                <select id="vectorAddSelect"></select>
               </div>
+            </div>
+
+            <div class="row3" style="margin-top:10px;">
+              <div>
+                <label>Area Form</label>
+                <select id="areaFormSelect" disabled></select>
+              </div>
+              <div>
+                <label>Area Level</label>
+                <input id="areaLevelInput" type="number" min="0" step="1" value="0" disabled />
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:flex-end;">
+                <button class="primary" id="addVectorBtn">Add Vector Step</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px;">
+              <label>Vector Chain</label>
+              <div class="list" id="vectorChainList"></div>
+              <div class="muted" id="vectorChainHint">Add one or more vectors (e.g., Dart + Totem + Cone).</div>
             </div>
 
             <div style="margin-top:10px;">
@@ -232,14 +257,14 @@
             </div>
 
             <div class="row3" style="margin-top:10px;">
-              <div><label>Area Level</label><input id="spellAreaLevel" type="number" min="0" step="1" placeholder="0"></div>
-              <div><label>Damage Level</label><input id="spellDamageLevel" type="number" min="0" step="1" placeholder="0"></div>
-              <div><label>Totem Level</label><input id="spellTotemLevel" type="number" min="0" step="1" placeholder="0"></div>
+              <div><label>Damage Level</label><input id="spellDamageLevel" type="number" min="0" step="1" value="0"></div>
+              <div><label>Totem Level</label><input id="spellTotemLevel" type="number" min="0" step="1" value="0"></div>
+              <div><label>Short Note</label><input id="spellShortNote" placeholder="optional"/></div>
             </div>
 
             <div style="margin-top:10px;">
-              <label>Notes / Rules Text</label>
-              <textarea id="spellText" placeholder="Optional extra notes..."></textarea>
+              <label>Rules Text</label>
+              <textarea id="spellText" placeholder="Optional extra text..."></textarea>
             </div>
 
             <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
@@ -285,49 +310,85 @@
       </div>
       <div class="bd">
         <div class="sheet" id="sheet">
-          <h2 id="sheetName">Unnamed</h2>
-          <small id="sheetMeta">—</small>
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+            <div>
+              <div style="font-size:22px; font-weight:800;" id="sheetName">Unnamed</div>
+              <div style="color:#444; margin-top:2px;" id="sheetMeta">—</div>
+            </div>
+            <div style="text-align:right;">
+              <div><strong>HP</strong>: <span id="sheetHP">0</span></div>
+              <div><strong>AP</strong>: <span id="sheetAP">0</span> &nbsp; <strong>RAP</strong>: <span id="sheetRAP">0</span></div>
+              <div><strong>Move</strong>: <span id="sheetMove">0</span></div>
+            </div>
+          </div>
 
           <hr />
-          <small><strong>Characteristics</strong></small>
-          <div id="sheetChars">—</div>
+
+          <div style="display:grid; grid-template-columns: 260px 1fr; gap:12px;">
+            <!-- LEFT SIDEBAR -->
+            <div>
+              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                <div style="font-weight:800; margin-bottom:6px;">Characteristics</div>
+                <div id="sheetChars">—</div>
+              </div>
+
+              <div style="height:10px"></div>
+
+              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                <div style="font-weight:800; margin-bottom:6px;">Skills</div>
+                <div id="sheetSkills">—</div>
+              </div>
+
+              <div style="height:10px"></div>
+
+              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                <div style="font-weight:800; margin-bottom:6px;">Traits</div>
+                <div id="sheetTraits">—</div>
+              </div>
+            </div>
+
+            <!-- MAIN COLUMN -->
+            <div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                  <div style="font-weight:800; margin-bottom:6px;">Actions</div>
+                  <div style="color:#555; margin-bottom:6px;">AP total: <span id="sheetAPTotal">0</span></div>
+                  <div id="sheetActions">—</div>
+                </div>
+
+                <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                  <div style="font-weight:800; margin-bottom:6px;">Reactions</div>
+                  <div style="color:#555; margin-bottom:6px;">RAP total: <span id="sheetRAPTotal">0</span></div>
+                  <div id="sheetReactions">—</div>
+                </div>
+              </div>
+
+              <div style="height:12px"></div>
+
+              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                <div style="font-weight:800; margin-bottom:6px;">Equipment</div>
+                <div id="sheetEquip">—</div>
+              </div>
+
+              <div style="height:12px"></div>
+
+              <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                <div style="font-weight:800; margin-bottom:6px;">Spells</div>
+                <div id="sheetSpells">—</div>
+              </div>
+            </div>
+          </div>
 
           <hr />
-          <small><strong>Derived</strong></small>
-          <div id="sheetDerived">—</div>
-
-          <hr />
-          <small><strong>Skills</strong></small>
-          <div id="sheetSkills">—</div>
-
-          <hr />
-          <small><strong>Traits</strong></small>
-          <div id="sheetTraits">—</div>
-
-          <hr />
-          <small><strong>Equipment</strong></small>
-          <div id="sheetEquip">—</div>
-
-          <hr />
-          <small><strong>Actions</strong> (AP total: <span id="sheetAPTotal">0</span>)</small>
-          <div id="sheetActions">—</div>
-
-          <hr />
-          <small><strong>Reactions</strong> (RAP total: <span id="sheetRAPTotal">0</span>)</small>
-          <div id="sheetReactions">—</div>
-
-          <hr />
-          <small><strong>Spells</strong></small>
-          <div id="sheetSpells">—</div>
-
-          <hr />
-          <small><strong>Notes</strong></small>
-          <div id="sheetNotes">—</div>
+          <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+            <div style="font-weight:800; margin-bottom:6px;">Notes</div>
+            <div id="sheetNotes">—</div>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
-  <script src="./app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
