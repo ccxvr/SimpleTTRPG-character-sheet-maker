@@ -1,0 +1,10 @@
+{
+  "species": [
+    {
+      "id": "human",
+      "name": "Human",
+      "base": { "move": 6 },
+      "mods": {}
+    }
+  ]
+}

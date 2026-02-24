@@ -1,0 +1,20 @@
+{
+  "equipment": {
+    "weapons": [
+      {
+        "id": "longsword",
+        "name": "Longsword",
+        "kind": "melee",
+        "damage": "1d6",
+        "apCost": 2
+      },
+      {
+        "id": "bow",
+        "name": "Bow",
+        "kind": "ranged",
+        "damage": "1d6",
+        "apCost": 2
+      }
+    ]
+  }
+}

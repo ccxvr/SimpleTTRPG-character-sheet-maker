@@ -1,0 +1,7 @@
+{
+  "vectors": [
+    { "id": "self", "name": "Self" },
+    { "id": "dart", "name": "Dart" },
+    { "id": "area", "name": "Area" }
+  ]
+}

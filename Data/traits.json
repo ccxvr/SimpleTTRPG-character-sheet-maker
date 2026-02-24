@@ -1,0 +1,15 @@
+{
+  "traits": [
+    {
+      "id": "grappler",
+      "name": "Grappler",
+      "xp": 5,
+      "grants": {
+        "actions": [
+          { "id": "grapple", "name": "Grapple", "apCost": 2 }
+        ],
+        "reactions": []
+      }
+    }
+  ]
+}
